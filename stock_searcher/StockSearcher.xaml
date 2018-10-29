@@ -1,0 +1,19 @@
+﻿<Window x:Class="nnns.StockSearcher"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:nnns"
+        mc:Ignorable="d"
+        Title="StockSearch" Height="127" Width="360" Foreground="Transparent" ResizeMode="NoResize" Visibility="Visible" WindowStyle="None" MouseLeftButtonDown="m_down" WindowStartupLocation="CenterScreen" Drop="m_drop" AllowDrop="True">
+    <Window.Background>
+        <ImageBrush ImageSource="res/main_bg.png"/>
+    </Window.Background>
+    <Grid>
+        <Button x:Name="bt_close" HorizontalAlignment="Right" VerticalAlignment="Top" Click="bt_colse" Style="{DynamicResource ButtonStyleClose}" >
+            <Image Source="res/close.png"/>
+        </Button>
+        <Image Source="res/ic.png" HorizontalAlignment="Left" VerticalAlignment="Top" Width="22" Height="22" Margin="2,2,0,0"/>
+        <Button Content="选择文件" HorizontalAlignment="Center" VerticalAlignment="Bottom" Click="bt_chouse" Style="{DynamicResource ButtonStyle}" Width="67" Margin="0,0,0,12" Background="{x:Null}" BorderBrush="{x:Null}" MinHeight="25" MinWidth="66" Foreground="#FF043648"/>
+    </Grid>
+</Window>
