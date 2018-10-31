@@ -36,7 +36,8 @@ namespace nnns
         public double Quality { get => quality; set => quality = value; }
         public string QualityString { get => $"{quality}mg"; set => quality = getSumValue(value); }
         public string Modification { get => modification; set => modification = Regex.Replace(value ?? "", @"\s", "").ToLower(); }// TODO  提取修饰信息？，这里要干什么忘记了
-        public string Comments { get => comments; set => comments = value ?? ""; }// TODO  提取转盐信息  注意中文和标准转盐与
+        public string Comments { get => comments; set => comments = intiComments(value); }// TODO  提取转盐信息  注意中文和标准转盐与
+
         public int Tfaflg { get => tfaflg; }
         public bool IsAvailable { get => !string.IsNullOrEmpty(orderId) && !string.IsNullOrEmpty(sequence) && mw > 0 && quality != 0; }
 
@@ -60,7 +61,14 @@ namespace nnns
                 else purity = getMaxValue(value);
             }
         }
-        
+
+        private string intiComments(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            // TODO 写到这里了，注意使用单例模式睡觉
+            return value;
+        }
+
         // 获取字符串中所有数字的和
         private double getSumValue(string str)
         {

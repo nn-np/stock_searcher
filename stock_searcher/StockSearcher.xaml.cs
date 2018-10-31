@@ -31,9 +31,13 @@ namespace nnns
 
         private void test()
         {
-            NnConfiguration nn = new NnConfiguration("I:/nn");
-            Console.WriteLine(nn.getDouble("tt", 55));
-            nn.save();
+            NnConfig config = ConfigurationManager.GetSection("nnconfig") as NnConfig;
+
+            int count = config.TfaFlgs.Count;
+            for(int i = 0; i < count; ++i)
+            {
+                Console.WriteLine(config.TfaFlgs[i].Name+" "+config.TfaFlgs[i].Flg);
+            }
         }
 
         private void bt_colse(object sender, RoutedEventArgs e) => Close();
