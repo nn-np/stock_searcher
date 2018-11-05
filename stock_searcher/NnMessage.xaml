@@ -1,0 +1,12 @@
+﻿<Window x:Class="nnns.NnMessage"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:nnns"
+        mc:Ignorable="d" AllowsTransparency="True" WindowStyle="None" Topmost="True" Focusable="False" IsTabStop="False" ShowInTaskbar="False" ResizeMode="NoResize" SizeToContent="WidthAndHeight" Background="Transparent">
+    <Grid ScrollViewer.VerticalScrollBarVisibility="Disabled">
+        <Border Background="#D4212125" CornerRadius="12"/>
+        <TextBlock x:Name="_text" Padding="5,0" Foreground="#FFF4F4EF" VerticalAlignment="Center" FontFamily="新宋体" HorizontalAlignment="Center"/>
+    </Grid>
+</Window>

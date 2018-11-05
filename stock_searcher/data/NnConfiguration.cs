@@ -1,7 +1,7 @@
 ﻿using System.Configuration;
 using System.IO;
 
-namespace nnns
+namespace nnns.data
 {
     class NnConfiguration
     {
@@ -39,11 +39,65 @@ namespace nnns
 
     class NnConfig : ConfigurationSection
     {
+        private static NnConfig nnConfig = null;
+        private static readonly object SynObject = new object();
+
+        private NnConfig() { }
+
+        internal static NnConfig _nnConfig
+        {
+            get
+            {
+                if (nnConfig == null)
+                {
+                    lock (SynObject)
+                    {
+                        if (nnConfig == null) nnConfig = ConfigurationManager.GetSection("nnconfig") as NnConfig;
+                    }
+                }
+                return nnConfig;
+            }
+        }
+        
         [ConfigurationProperty("aminoAcids", IsDefaultCollection = false)]
         public NnAminoAcids AminoAcids { get => base["aminoAcids"] as NnAminoAcids; }
 
         [ConfigurationProperty("tfaflgs")]
         public NnTfaFlgs TfaFlgs { get => base["tfaflgs"] as NnTfaFlgs; }
+
+        [ConfigurationProperty("titles")]
+        public NnTitleFlgs TitleFlgs { get => base["titles"] as NnTitleFlgs; }
+    }
+
+    // 标题列对应类
+    class NnTitleFlgs : ConfigurationElementCollection
+    {
+        protected override ConfigurationElement CreateNewElement() => new NnTitleflg();
+
+        protected override object GetElementKey(ConfigurationElement element) => ((NnTitleflg)element).Name;
+        
+        new public NnTitleflg this[string name] => BaseGet(name) as NnTitleflg;
+
+        public NnTitleflg this[int index] => BaseGet(index) as NnTitleflg;
+    }
+
+    class NnTitleflg: ConfigurationElement
+    {
+        int _column = -1;
+
+        [ConfigurationProperty("name", IsKey = true)]
+        public string Name { get => this["name"] as string; }
+        [ConfigurationProperty("column")]
+        private string column { get => this["column"] as string; }
+
+        public int Flg
+        {
+            get
+            {
+                if (_column < 0 && !int.TryParse(column, out _column)) _column = 0;
+                return _column;
+            }
+        }
     }
 
     // 转盐配置类
@@ -75,6 +129,8 @@ namespace nnns
 
     class NnTfaFlg: ConfigurationElement
     {
+        int _flg = -1;
+
         [ConfigurationProperty("name", IsKey = true)]
         public string Name { get => this["name"] as string; }
         [ConfigurationProperty("flg")]
@@ -84,14 +140,12 @@ namespace nnns
         {
             get
             {
-                int i;
-                if (!int.TryParse(flg, out i)) i = 0;
-                return i;
+                if (_flg < 0 && !int.TryParse(flg, out _flg)) _flg = 0;
+                return _flg;
             }
         }
     }
-
-
+    
 
     // 氨基酸配置类，这里包括所有20中氨基酸和一些修饰的分子量以及单字母三字母，注意这是一个集合
     class NnAminoAcids : ConfigurationElementCollection
@@ -122,6 +176,8 @@ namespace nnns
     // 这是单个氨基酸配置类，子节点
     class NnAminoAcid : ConfigurationElement
     {
+        double _mw = -1;
+
         // 氨基酸名称，即三字母
         [ConfigurationProperty("name", IsKey = true)]
         public string Name { get => this["name"] as string; set => this["name"] = value; }
@@ -136,9 +192,8 @@ namespace nnns
         {
             get
             {
-                double d;
-                if (!double.TryParse(mw, out d)) d = 0;
-                return d;
+                if (_mw < 0 && !double.TryParse(mw, out _mw)) _mw = 0;
+                return _mw;
             }
         }
     }

@@ -14,6 +14,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Configuration;
+using nnns.data;
 
 namespace nnns
 {
@@ -26,11 +27,19 @@ namespace nnns
         public StockSearcher()
         {
             InitializeComponent();
+            this.Top = SystemParameters.WorkArea.Height * 0.382 - this.Height / 2;
+            this.Left = (SystemParameters.WorkArea.Width - this.Width) / 2;
             test();
         }
 
         private void test()
         {
+
+            NnSearchManager manager = new NnSearchManager(@"C:\Users\nn_np\Desktop\上午新单.xlsx");
+            manager.Start();
+
+            Console.WriteLine(ConfigurationManager.ConnectionStrings["nnhistory"].ConnectionString);
+
             NnConfig config = ConfigurationManager.GetSection("nnconfig") as NnConfig;
 
             int count = config.TfaFlgs.Count;
@@ -40,7 +49,7 @@ namespace nnns
             }
         }
 
-        private void bt_colse(object sender, RoutedEventArgs e) => Close();
+        private void bt_colse_click(object sender, RoutedEventArgs e) => Close();
 
         private void m_down(object sender, MouseButtonEventArgs e) => DragMove();
 
@@ -51,7 +60,7 @@ namespace nnns
                 Console.WriteLine(((Array)e.Data.GetData(DataFormats.FileDrop)).GetValue(0).ToString());
         }
 
-        private void bt_chouse(object sender, RoutedEventArgs e)
+        private void bt_choose_click(object sender, RoutedEventArgs e)
         {
             _chouse();
         }
@@ -66,5 +75,7 @@ namespace nnns
                 Console.WriteLine(dialog.FileName);
             }
         }
+
+        private void m_doubleclick(object sender, MouseButtonEventArgs e) => Close();
     }
 }

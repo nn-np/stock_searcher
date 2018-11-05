@@ -8,7 +8,7 @@ using System.Threading.Tasks;
  * 多肽类
  * crude为 -2，desalt为 -1
  */
-namespace nnns
+namespace nnns.data
 {
     class NnPolypeptide
     {
@@ -30,16 +30,17 @@ namespace nnns
 
         public string OrderId { get => orderId; }
         public string Sequence { get => sequence; }
-        public long WorkNo { get => workNo; set => workNo = value; }
+        public long WorkNo { get => workNo; set => workNo = value > 9999999 ? value : -1; }
+        public object WorkNoObj { set => WorkNo = getLong(value); }// 如果从excel表中读取的值类型不确定的话，建议使用这个属性，避免报错闪退
         public double Mw { get => mw; set => mw = value; }
         public string MwString { get => mw.ToString(); set => mw = getMaxValue(value); }
         public double Quality { get => quality; set => quality = value; }
         public string QualityString { get => $"{quality}mg"; set => quality = getSumValue(value); }
-        public string Modification { get => modification; set => modification = Regex.Replace(value ?? "", @"\s", "").ToLower(); }// TODO  提取修饰信息？，这里要干什么忘记了
-        public string Comments { get => comments; set => comments = intiComments(value); }// TODO  提取转盐信息  注意中文和标准转盐与
+        public string Modification { get => modification; set => modification = Regex.Replace(value ?? "", @"\s", "").ToLower(); }// TODO  提取修饰信息？，这里要干什么忘记了，想起来了，这里匹配是要忽略大小写
+        public string Comments { get => comments; set => comments = intiComments(value); }
 
         public int Tfaflg { get => tfaflg; }
-        public bool IsAvailable { get => !string.IsNullOrEmpty(orderId) && !string.IsNullOrEmpty(sequence) && mw > 0 && quality != 0; }
+        public bool IsAvailable { get => !string.IsNullOrEmpty(orderId) && !string.IsNullOrEmpty(sequence) && workNo > 0 && mw > 0 && quality != 0; }
 
         public double Purity { get => purity; set => purity = value; }
         public string PurityString
@@ -62,10 +63,31 @@ namespace nnns
             }
         }
 
+        private long getLong(object value)
+        {
+            switch (value.GetType().Name)
+            {
+                case "Double":
+                case "Int32":
+                case "Int64":
+                case "Single":
+                    return WorkNo = (long)value;
+                default:return -1;
+            }
+        }
+
         private string intiComments(string value)
         {
             if (string.IsNullOrEmpty(value)) return "";
-            // TODO 写到这里了，注意使用单例模式睡觉
+            // NnConfig是单例模式
+            NnConfig config = NnConfig._nnConfig;
+            foreach(NnTfaFlg flg in config.TfaFlgs)
+            {
+                if(Regex.IsMatch(value,flg.Name,RegexOptions.IgnoreCase))
+                {
+                    tfaflg |= (1 << flg.Flg);
+                }
+            }
             return value;
         }
 
@@ -110,6 +132,11 @@ namespace nnns
                 }
             }
             return value;
+        }
+
+        public static int Match(NnPolypeptide a,NnPolypeptide b)
+        {
+            return 0;
         }
     }
 }
