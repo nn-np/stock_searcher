@@ -4,9 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:nnns"
-        mc:Ignorable="d" AllowsTransparency="True" WindowStyle="None" Topmost="True" Focusable="False" IsTabStop="False" ShowInTaskbar="False" ResizeMode="NoResize" SizeToContent="WidthAndHeight" Background="Transparent">
+        mc:Ignorable="d" AllowsTransparency="True" WindowStyle="None" Topmost="True" Focusable="False" IsTabStop="False" ShowInTaskbar="False" ResizeMode="NoResize" SizeToContent="WidthAndHeight" Background="#00000000">
     <Grid ScrollViewer.VerticalScrollBarVisibility="Disabled">
-        <Border Background="#D4212125" CornerRadius="12"/>
+        <Border Background="#FF212125" CornerRadius="12"/>
         <TextBlock x:Name="_text" Padding="5,0" Foreground="#FFF4F4EF" VerticalAlignment="Center" FontFamily="新宋体" HorizontalAlignment="Center"/>
     </Grid>
 </Window>

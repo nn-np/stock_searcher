@@ -30,6 +30,8 @@ namespace nnns.data
 
         public double? getDouble(string key, double? defaut = null) => configuration.AppSettings.Settings[key] == null ? defaut : double.Parse(configuration.AppSettings.Settings[key].Value);
 
+        public bool getBool(string key, bool defaut) => configuration.AppSettings.Settings[key] == null ? defaut : configuration.AppSettings.Settings[key].Value == "True";
+
         public void save() => configuration.Save();
 
         public void saveAs(string url) => configuration.SaveAs(url + ".config");
@@ -59,14 +61,21 @@ namespace nnns.data
             }
         }
         
+        // 氨基酸
         [ConfigurationProperty("aminoAcids", IsDefaultCollection = false)]
         public NnAminoAcids AminoAcids { get => base["aminoAcids"] as NnAminoAcids; }
 
+        // 转盐信息
         [ConfigurationProperty("tfaflgs")]
         public NnTfaFlgs TfaFlgs { get => base["tfaflgs"] as NnTfaFlgs; }
 
+        // excel表对应列
         [ConfigurationProperty("titles")]
         public NnTitleFlgs TitleFlgs { get => base["titles"] as NnTitleFlgs; }
+
+        // 保存位置
+        [ConfigurationProperty("savepath")]
+        public NnSavePaths SavePaths { get => base["savepath"] as NnSavePaths; }
     }
 
     // 标题列对应类
@@ -90,11 +99,11 @@ namespace nnns.data
         [ConfigurationProperty("column")]
         private string column { get => this["column"] as string; }
 
-        public int Flg
+        public int? Flg
         {
             get
             {
-                if (_column < 0 && !int.TryParse(column, out _column)) _column = 0;
+                if (_column < 0 && !int.TryParse(column, out _column)) return null;
                 return _column;
             }
         }
@@ -115,16 +124,7 @@ namespace nnns.data
 
         new public NnTfaFlg this[string name] => BaseGet(name) as NnTfaFlg;
 
-        public NnTfaFlg this[int index]
-        {
-            get { return BaseGet(index) as NnTfaFlg; }
-            set
-            {
-                if (BaseGet(index) != null)
-                    BaseRemoveAt(index);
-                BaseAdd(index, value);
-            }
-        }
+        public NnTfaFlg this[int index] => BaseGet(index) as NnTfaFlg;
     }
 
     class NnTfaFlg: ConfigurationElement
@@ -188,13 +188,32 @@ namespace nnns.data
         [ConfigurationProperty("mw")]
         private string mw { get => this["mw"] as string; }
 
-        public double Mw
+        public double? Mw
         {
             get
             {
-                if (_mw < 0 && !double.TryParse(mw, out _mw)) _mw = 0;
+                if (_mw < 0 && !double.TryParse(mw, out _mw)) return null;
                 return _mw;
             }
         }
+    }
+
+    // 保存位置配置类
+    class NnSavePaths : ConfigurationElementCollection
+    {
+        protected override ConfigurationElement CreateNewElement() => new NnSavePath();
+
+        protected override object GetElementKey(ConfigurationElement element) => ((NnSavePath)element).Path;
+
+        new public NnSavePath this[string name] => BaseGet(name) as NnSavePath;
+
+        public NnSavePath this[int index] => BaseGet(index) as NnSavePath;
+    }
+
+    // 保存位置配置子节点
+    class NnSavePath: ConfigurationElement
+    {
+        [ConfigurationProperty("path", IsKey = true)]
+        public string Path { get => this["path"] as string; set => this["path"] = value; }
     }
 }

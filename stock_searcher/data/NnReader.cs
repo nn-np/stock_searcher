@@ -3,60 +3,28 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Data.OleDb;
+using System.Reflection;
 
 namespace nnns.data
 {
-    // excel workbook获取静态类
-    sealed class NnExcelFactory
-    {
-        private static Application application = null;
-        private static readonly object SynObject = new object();
-
-        NnExcelFactory() { }
-
-        public static Workbook getWorkBook(string url = null)
-        {
-            if (application == null)
-            {
-                lock (SynObject)
-                {
-                    if (application == null)
-                    {
-                        application = new Application();
-                        //application.DisplayAlerts = false;
-                        application.Visible = false;
-                    }
-                }
-            }
-            if (url == null) return application.Workbooks.Add(Type.Missing);// 如果url为空，则建立新表
-            return application.Workbooks.Open(url, Type.Missing);
-        }
-
-        public static void Quit()
-        {
-            if (application != null)
-            {
-                Console.WriteLine("调用释放资源");
-                application.Quit();
-                Marshal.ReleaseComObject(application);
-                application = null;
-            }
-        }
-    }
-
-
     class NnExcelReader
     {
         private bool isReadOnly = true;// 文件是否为只读
         private string url;
+        private Application application;
         private Workbook workbook;
 
         public NnExcelReader(string url = null)
         {
             this.url = url;
+            application = new Application();
+            application.DisplayAlerts = false;
             initReadOnly();
-            workbook = NnExcelFactory.getWorkBook(url);
+            workbook = url == null ? application.Workbooks.Add(Type.Missing)
+                : application.Workbooks.Open(url, Type.Missing);
         }
+
+        public bool ToOpen { set => workbook.Application.Visible = value; }
 
         public bool IsReadOnly { get => isReadOnly; }
 
@@ -77,15 +45,37 @@ namespace nnns.data
             return sheet;
         }
 
-        public void save() => workbook.Save();
+        public void Save() => workbook.Save();
 
-        public void saveAs(string path) => workbook.SaveAs(path);
+        public void SaveAs(string path) => workbook.SaveAs(path, XlFileFormat.xlOpenXMLWorkbook);
         
         public Worksheet this[int index]{ get => workbook.Worksheets[index]; }
 
         public Worksheet this[string name] { get => workbook.Worksheets[name]; }
 
         public string Url { get => url; }
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern int GetWindowThreadProcessId(IntPtr hwnd, out int processid);
+        public void Close()
+        {
+            if (application == null)
+                return;
+            Console.WriteLine($"释放: {url}");
+            try
+            {
+                workbook.Close();
+                application.Quit();
+            }
+            catch { }
+            int pId;
+            GetWindowThreadProcessId(new IntPtr(application.Hwnd), out pId);
+            System.Diagnostics.Process.GetProcessById(pId).Kill();
+            application = null;
+        }
+
+        ~NnExcelReader() => Close();
+
     }
 
     class NnAccessReader
@@ -102,22 +92,22 @@ namespace nnns.data
 
         public OleDbDataReader ExecuteReader(string sql)
         {
-            OleDbCommand cmd = connection.CreateCommand();
-            cmd.CommandText = sql;
-            return cmd.ExecuteReader();// 注意关闭DataReader
+            Console.WriteLine(sql);
+            using (OleDbCommand cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = sql;
+                return cmd.ExecuteReader();
+            }
         }
 
         public int ExecuteNonQuery(string sql)
         {
-            OleDbCommand cmd = connection.CreateCommand();
-            cmd.CommandText = sql;
-            return cmd.ExecuteNonQuery();
-        }
-
-        // 析构函数
-        ~NnAccessReader()
-        {
-            //connection.Close();
+            Console.WriteLine(sql);
+            using (OleDbCommand cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = sql;
+                return cmd.ExecuteNonQuery();
+            }
         }
     }
 }
