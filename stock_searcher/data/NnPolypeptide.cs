@@ -218,7 +218,7 @@ namespace nnns.data
             foreach (NnStock sk in m_list)
             {
                 if (QualityFlg && sk.Flg != 0 && (sk.Flg & 1) != 1) continue;// 如果质量够，则只要没有问题的库存（纯度不够的也算是没有问题啊）// 怎样的订单没有问题？flg=0的和(sk.Flg & 1)=1的
-                sb.Append(fast ? "" : " \\\\  ").Append(sk.ToString());
+                sb.Append(fast ? "" : " \\  ").Append(sk.ToString());
                 fast = false;
             }
 
@@ -240,7 +240,7 @@ namespace nnns.data
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder(OrderId);
-            builder.Append(" ").Append(Date.ToShortDateString()).Append(" ").Append(QualityString).Append(" | ")
+            builder.Append(" ").Append(Date.ToShortDateString()).Append(" ").Append(Quality).Append(" ")
                 .Append(PurityString).Append(" ").Append(Coordinate).Append((Flg & 4) == 0 ? "" : "未转盐").Append((Flg & 2) == 0 ? "" : " " + Modification);
             return builder.ToString();
         }

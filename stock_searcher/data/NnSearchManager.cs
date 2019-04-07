@@ -255,14 +255,6 @@ namespace nnns.data
                 isContinue = false;
                 Console.WriteLine(e.ToString());
             }
-            try
-            {
-                TcpClient client = new TcpClient("47.105.178.132", 9011);
-                string str = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()}: {stimes}  {scount}";
-                client.Client.Send(Encoding.Default.GetBytes(str));
-                client.Close();
-            }
-            catch { isContinue = false; NnMessage.Show("数据库错误><"); }
         }
 
         public bool Stop() => isContinue = false;

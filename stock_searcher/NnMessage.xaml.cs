@@ -15,7 +15,7 @@ namespace nnns
 
         public static void Show(string mes)
         {
-            Application.Current.Dispatcher.BeginInvoke(new Action(() => { _show(mes); }));
+            Application.Current.Dispatcher.Invoke(() => { _show(mes); });
         }
 
         private static void _show(string mes)
