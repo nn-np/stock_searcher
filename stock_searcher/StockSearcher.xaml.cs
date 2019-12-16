@@ -33,6 +33,12 @@ namespace nnns
             InitializeComponent();
             this.Top = SystemParameters.WorkArea.Height * 0.382 - this.Height / 2;
             this.Left = (SystemParameters.WorkArea.Width - this.Width) / 2;
+            if (!string.IsNullOrWhiteSpace(NnReader.AutoSearchPath))
+            {
+                IsQuit = true;
+                _start(NnReader.AutoSearchPath);
+            }
+
             //test();
         }
 
@@ -92,7 +98,7 @@ namespace nnns
             string str = System.IO.Path.GetExtension(url);
             if (str != ".xlsx" && str != ".xls")
             {
-                NnMessage.Show("无效文件");
+                NnMessage.ShowMessage("无效文件");
                 return;
             }
             _start(url);
@@ -135,7 +141,7 @@ namespace nnns
                     if (isComplete)
                     {
                         stockSearcher.m_tblock.Text = "数据已保存 选择或拖动文件到此处继续";
-                        NnMessage.Show("搜索已完成");
+                        NnMessage.ShowMessage("搜索已完成");
                         Console.WriteLine("Complete");
                     }
                     else

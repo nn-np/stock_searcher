@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Data.OleDb;
 using System.Reflection;
+using System.Configuration;
 
 namespace nnns.data
 {
@@ -78,22 +79,152 @@ namespace nnns.data
 
     }
 
-    class NnAccessReader
+    class NnReader
     {
-        private string url;// 数据库连接字段
-        private OleDbConnection connection;
+        private OleDbConnection mConnection;
 
-        public NnAccessReader(string url)
+        public static string AutoSearchPath;
+
+        public bool IsValid;
+
+
+        private static NnReader mReader;
+        private static readonly object locker = new object();
+
+        private NnReader()
         {
-            this.url = url;
-            connection = new OleDbConnection(this.url);
-            connection.Open();
+#if (DEBUG)
+            string path = ConfigurationManager.ConnectionStrings["nnstock_d"].ConnectionString;// 库存路径
+            string key = ConfigurationManager.AppSettings["nnkey"];
+#else
+            string path = ConfigurationManager.ConnectionStrings["nnstock"].ConnectionString;// 库存路径
+            string key = NnConnection.NnDecrypt(ConfigurationManager.AppSettings["nnkey"]);
+#endif
+            if (path == null || key == null)
+            {
+                NnMessage.ShowMessage("配置文件错误", true);
+                return;
+            }
+            int index = 12;
+            while (index < 21)
+            {
+                try
+                {
+                    mConnection = new OleDbConnection($"Provider=Microsoft.ACE.OLEDB.{index.ToString()}.0;Data Source={path}");
+                    mConnection.Open();
+                    IsValid = true;
+                    return;
+                }
+                catch (Exception e) { ++index; Console.WriteLine(e.ToString()); }
+            }
+            NnMessage.ShowMessage("数据库错误！", true);
         }
 
+        public static NnReader Instance
+        {
+            get
+            {
+                if (mReader == null)
+                {
+                    lock (locker)
+                    {
+                        if (mReader == null)
+                        {
+                            mReader = new NnReader();
+                        }
+                    }
+                }
+                return mReader;
+            }
+        }
+
+        public void Colse()
+        {
+            try
+            {
+                if(mConnection!=null&& mConnection.State != System.Data.ConnectionState.Closed)
+                {
+                    mConnection.Dispose();
+                }
+            }
+            catch { }
+        }
+        /// <summary>
+        /// 写入历史数据信息
+        /// </summary>
+        internal int InsertHistory(NnPolypeptide od)
+        {
+            int count = 0;
+            try
+            {
+                using (OleDbCommand cmd = new OleDbCommand($"INSERT INTO history VALUES(@v1,@v2,@v3,@v4,@v5,@v6,@v7,@v8)", mConnection))
+                {
+                    foreach (var v in od.GetObjects())
+                    {
+                        cmd.Parameters.AddWithValue("", v);
+                    }
+                    count = cmd.ExecuteNonQuery();
+                }
+            }
+            catch { }
+            return count;
+        }
+        /// <summary>
+        /// 获取库存信息
+        /// </summary>
+        internal NnStockInfo GetStockInfo(NnPolypeptide p)
+        {
+            NnStockInfo info = new NnStockInfo(p);
+            try
+            {
+                using(OleDbCommand cmd = new OleDbCommand("SELECT * FROM history,stock_new where history.orderId = stock_new.orderId AND history.sequence=@v1", mConnection))
+                {
+                    using (OleDbDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            NnStock stock = _getStockFromDataReader(reader);
+                            info.Add(stock);// 这里只添加，由stockInfo判断是否有效，决定是否添加（所以这里添加了，不一定会真添加到库存信息中）
+                        }
+                    }
+                }
+            }
+            catch { }
+            return info;
+        }
+
+        /// <summary>
+        /// 从dataReader对象获取stock数据
+        /// </summary>
+        private NnStock _getStockFromDataReader(OleDbDataReader reader)
+        {
+            string cause = reader["cause"] as string;
+            if (!string.IsNullOrWhiteSpace(cause))
+                return null;
+            string orderId = reader["history.orderId"] as string;
+            string sequence = reader["sequence"] as string;
+            NnStock stock = new NnStock(orderId, sequence);
+            stock.QualitySum = reader["quality"] as string;
+            stock.Mw = (double)reader["mw"];
+            stock.Purity = (double)reader["purity"];
+            stock.Modification = reader["modification"] as string;
+            stock.Comments = reader["comments"] as string;
+
+            object dt = reader["_date"];
+            if (dt.GetType() != typeof(DBNull))
+                stock.Date = (DateTime)dt;
+            object wono = reader["workNo"];
+            if (wono.GetType() != typeof(DBNull))
+                stock.WorkNo = (int)wono;
+
+            return stock;
+        }
+
+        // --------------工具-----------------
         public OleDbDataReader ExecuteReader(string sql)
         {
             Console.WriteLine(sql);
-            using (OleDbCommand cmd = connection.CreateCommand())
+            using (OleDbCommand cmd = mConnection.CreateCommand())
             {
                 cmd.CommandText = sql;
                 return cmd.ExecuteReader();
@@ -103,7 +234,7 @@ namespace nnns.data
         public int ExecuteNonQuery(string sql)
         {
             Console.WriteLine(sql);
-            using (OleDbCommand cmd = connection.CreateCommand())
+            using (OleDbCommand cmd = mConnection.CreateCommand())
             {
                 cmd.CommandText = sql;
                 return cmd.ExecuteNonQuery();

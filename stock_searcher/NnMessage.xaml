@@ -4,9 +4,49 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:nnns"
-        mc:Ignorable="d" AllowsTransparency="True" WindowStyle="None" Topmost="True" Focusable="False" IsTabStop="False" ShowInTaskbar="False" ResizeMode="NoResize" SizeToContent="WidthAndHeight" Background="#00000000">
-    <Grid ScrollViewer.VerticalScrollBarVisibility="Disabled">
-        <Border Background="#FF212125" CornerRadius="12"/>
-        <TextBlock x:Name="_text" Padding="5,0" Foreground="#FFF4F4EF" VerticalAlignment="Center" FontFamily="新宋体" HorizontalAlignment="Center"/>
+        mc:Ignorable="d"
+        BorderThickness="7"
+        Title="NnMessage" Height="139" Width="332" ShowInTaskbar="False" AllowsTransparency="True" WindowStyle="None" Background="#00000000" Topmost="True" Loaded="window_loaded" MouseDown="Window_MouseDown">
+    <Window.Effect>
+        <DropShadowEffect ShadowDepth="0" BlurRadius="7"/>
+    </Window.Effect>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="3*"/>
+            <RowDefinition Height="1"/>
+            <RowDefinition Height="1*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="3*"/>
+        </Grid.ColumnDefinitions>
+        <Border Grid.RowSpan="3" Grid.ColumnSpan="2" CornerRadius="12" Background="#FFFBFBFB"/>
+        <Image Source="/res/m_ic.ico" Margin="20" VerticalAlignment="Bottom">
+            <Image.Effect>
+                <DropShadowEffect ShadowDepth="0" BlurRadius="7"/>
+            </Image.Effect>
+        </Image>
+        <Border Grid.Row="1" Grid.ColumnSpan="2" Background="#FF212121"/>
+
+        <Button Grid.ColumnSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Click="btclose_click" Style="{DynamicResource ButtonStyleClose}" >
+            <Image Source="res/close.png"/>
+        </Button>
+
+        <Grid Grid.ColumnSpan="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="3*"/>
+                <RowDefinition Height="2*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="3*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock x:Name="tb_top" Grid.ColumnSpan="2" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,12" FontSize="16"/>
+            <TextBlock x:Name="tb_center" Grid.Column="1" Grid.Row="1" Margin="7,0" Foreground="#FF373737" TextWrapping="Wrap"/>
+        </Grid>
+
+        <TextBlock Grid.Row="2" x:Name="tb_bottom" Grid.ColumnSpan="2" HorizontalAlignment="Right" Margin="0,0,20,0" VerticalAlignment="Center" Text="nnns"/>
     </Grid>
 </Window>

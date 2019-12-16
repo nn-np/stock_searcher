@@ -141,6 +141,11 @@ namespace nnns.data
             }
             return value;
         }
+
+        internal object[] GetObjects()
+        {
+            return new object[] { DateTime.Now.ToString(), WorkNo, OrderId, Sequence, Purity, Mw, Modification, Comments };
+        }
     }
 
     class NnStockInfo

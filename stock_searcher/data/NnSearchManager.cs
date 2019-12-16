@@ -19,7 +19,6 @@ namespace nnns.data
     {
         private bool isContinue = true;// 线程是否需要继续运行
         private NnExcelReader excelReader;// excel读写
-        private NnAccessReader accessReader;// 数据库读写
         private Range m_range;// 表格使用的范围
         private string url;
 
@@ -70,12 +69,14 @@ namespace nnns.data
                 SearchProgress.progress((float)i / rows);// 通知搜索进度
 
                 try
-                {// 包含在try catch里避免一条订单出错影响其他订单的查找
+                {
+                    // 包含在try catch里避免一条订单出错影响其他订单的查找
                     NnPolypeptide newPolypeptide = getPolypeptideFromExcel(i);// 得到excel中数据
                     if (newPolypeptide.IsAvailable)// 如果从excel读取的数据有效，则查找库存，存入数据库
                     {
                         ++scount;
-                        _insert(newPolypeptide);// 将数据上传到数据库，这个函数有自己的异常处理，错误不会影响后面的执行
+                        // 将数据上传到数据库，这个函数有自己的异常处理，错误不会影响后面的执行
+                        NnReader.Instance.InsertHistory(newPolypeptide);
                         if (_search(newPolypeptide, i))// 开始搜索数据并写入excel
                             ++count;
                     }
@@ -99,7 +100,8 @@ namespace nnns.data
         // 查找库存
         private bool _search(NnPolypeptide p, int row)
         {
-            NnStockInfo info = getStockInfoFromAccess(p);
+            // 从数据库搜索，得到stockInfo对象，注意，这里传入的参数是新单  order by quality desc
+            NnStockInfo info = NnReader.Instance.GetStockInfo(p);
             if (!info.IsAvailable) return false;// 如果库存有效，写入excel并且设置好单元格颜色
 
             m_range.Cells[row, _info] = info.ToString();
@@ -109,59 +111,6 @@ namespace nnns.data
                 case NnColorFlg.Quality: m_range.Cells[row, _info].Interior.ColorIndex = 50; break;
             }
             return true;
-        }
-
-        // 将新单信息保存到数据库中
-        private void _insert(NnPolypeptide p)
-        {
-            try
-            {
-                accessReader.ExecuteNonQuery($"insert into history values('{DateTime.Now}'," +
-                    $"{p.WorkNo},'{p.OrderId}','{p.Sequence}',{p.Purity},{p.Mw}," +
-                    $"'{p.Modification}','{p.Comments.Replace("'", "''")}')");
-            }
-            catch { }
-        }
-
-        // 从数据库搜索，得到stockInfo对象，注意，这里传入的参数是新单  order by quality desc
-        // history.orderId,history.sequence,history.mw,history.modification,history.comments,history.purity,stock_new.cause,stock_new.quality,stock_new.[_date] 
-        private NnStockInfo getStockInfoFromAccess(NnPolypeptide p)
-        {
-            OleDbDataReader reader = accessReader.ExecuteReader("select * from history,stock_new where history.orderId = stock_new.orderId" +
-                    $" and sequence = '{p.Sequence}'");
-            NnStockInfo info = new NnStockInfo(p);
-            while (reader.Read())
-            {
-                NnStock stock = getStockFromDataReader(reader);
-                info.Add(stock);// 这里只添加，由stockInfo判断是否有效，决定是否添加（所以这里添加了，不一定会真添加到库存信息中）
-            }
-            reader.Close();
-            return info;
-        }
-
-        // 从dataReader对象获取stock数据
-        private NnStock getStockFromDataReader(OleDbDataReader reader)
-        {
-            string cause = reader["cause"] as string;
-            if (!string.IsNullOrWhiteSpace(cause))
-                return null;
-            string orderId = reader["history.orderId"] as string;
-            string sequence = reader["sequence"] as string;
-            NnStock stock = new NnStock(orderId, sequence);
-            stock.QualitySum = reader["quality"] as string;
-            stock.Mw = (double)reader["mw"];
-            stock.Purity = (double)reader["purity"];
-            stock.Modification = reader["modification"] as string;
-            stock.Comments = reader["comments"] as string;
-
-            object dt = reader["_date"];
-            if (dt.GetType() != typeof(DBNull))
-                stock.Date = (DateTime)dt;
-            object wono = reader["workNo"];
-            if (wono.GetType() != typeof(DBNull))
-                stock.WorkNo = (int)wono;
-
-            return stock;
         }
 
         // 从excel获取多肽对象
@@ -191,14 +140,14 @@ namespace nnns.data
                 if (configuration.getBool("issave", false))
                     excelReader.Save();
             }
-            catch { NnMessage.Show("无法保存 请确保文件可写"); }
+            catch { NnMessage.ShowMessage("无法保存 请确保文件可写",true); }
             foreach (NnSavePath path in NnConfig._nnConfig.SavePaths)
             {
                 try
                 {
                     excelReader.SaveAs(path.Path + Path.GetFileNameWithoutExtension(url));
                 }
-                catch { NnMessage.Show($"无法保存到 {path.Path}"); }
+                catch { NnMessage.ShowMessage($"无法保存到 {path.Path}",true); }
             }
 
             configuration.set("scount", scount);
@@ -209,6 +158,11 @@ namespace nnns.data
         private void init(string url)
         {
             this.url = url;// 注意，这里的url在传进来之前确保是excel文件，谁要作死传其他的我不管
+            if (!NnReader.Instance.IsValid)
+            {
+                isContinue = false;
+                return;
+            }
             try
             {
                 configuration = new NnConfiguration();
@@ -217,7 +171,7 @@ namespace nnns.data
             }
             catch (Exception e)
             {
-                NnMessage.Show("配置文件读取错误!");
+                NnMessage.ShowMessage("配置文件读取错误!");
                 isContinue = false;
                 Console.WriteLine(e.ToString());
                 return;
@@ -231,29 +185,13 @@ namespace nnns.data
             {
                 excelReader = new NnExcelReader(url);
                 excelReader.ToOpen = configuration.getBool("toopen", false);
-                /*if (excelReader.IsReadOnly)
-                {
-                    NnMessage.Show("所选表格已被占用，关闭表格后再次尝试！");
-                    isContinue = false;
-                    return;
-                }*/
             }
             catch (Exception e)
             {
-                NnMessage.Show("无excel组件或文件错误！");
+                NnMessage.ShowMessage("无excel组件或文件错误！");
                 isContinue = false;
                 Console.WriteLine(e.ToString());
                 return;
-            }
-            try
-            {
-                accessReader = new NnAccessReader(ConfigurationManager.ConnectionStrings["nnhistory"].ConnectionString);
-            }
-            catch (Exception e)
-            {
-                NnMessage.Show("数据库初始化错误！");
-                isContinue = false;
-                Console.WriteLine(e.ToString());
             }
         }
 

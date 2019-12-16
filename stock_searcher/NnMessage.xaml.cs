@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 
 namespace nnns
@@ -11,42 +11,77 @@ namespace nnns
     /// </summary>
     public partial class NnMessage : Window
     {
-        private static NnMessage message;
+        private static NnMessage mMessage;
 
-        public static void Show(string mes)
-        {
-            Application.Current.Dispatcher.Invoke(() => { _show(mes); });
-        }
-
-        private static void _show(string mes)
-        {
-            if (message != null) return;
-            message = new NnMessage();
-            message.Text = mes;
-            message.Show();
-            message.Top = SystemParameters.WorkArea.Height * 0.618 - message.Height / 2;
-            message.Left = (SystemParameters.PrimaryScreenWidth - message.Width) / 2;
-            Task.Delay(4500).ContinueWith(_ => { _animation(); });
-            Console.WriteLine(mes);
-        }
-
-        private static void _animation()
-        {
-            message.Dispatcher.Invoke(() =>
-            {
-                DoubleAnimation da = new DoubleAnimation();
-                da.To = 0;
-                da.Duration = new Duration(TimeSpan.FromMilliseconds(500));
-                message.BeginAnimation(Window.OpacityProperty, da);
-            });
-            Task.Delay(500).ContinueWith(_ => { message.Dispatcher.Invoke(() => { message.Close(); message = null; }); });
-        }
-
-        public string Text { set => _text.Text = value; }
-
-        public NnMessage()
+        /// <summary>
+        /// 消息弹出窗口
+        /// </summary>
+        /// <param name="message">消息内容</param>
+        /// <param name="isError">消息级别，错误或警告</param>
+        private NnMessage()
         {
             InitializeComponent();
+            this.Top = SystemParameters.WorkArea.Height;
+            this.Left = SystemParameters.WorkArea.Width - this.Width;
+        }
+
+        private void _showMessage(string message, bool isError = false)
+        {
+            tb_bottom.Text = DateTime.Now.ToShortTimeString();
+            tb_top.Text = "提示：";
+            if (isError)
+            {
+                tb_top.Foreground = new SolidColorBrush(Color.FromRgb(0xCA, 0x51, 0x00));
+            }
+            tb_center.Text = message;
+            if (!isError)
+            {
+                Thread t = new Thread(_autoClose);
+                t.IsBackground = true;
+                t.Start();
+            }
+        }
+
+        private void _autoClose()
+        {
+            Thread.Sleep(4500);
+            this.Dispatcher.Invoke(() => this.Close());
+        }
+
+        // 关闭按钮
+        private void btclose_click(object sender, RoutedEventArgs e)
+        {
+            this.Hide();
+        }
+
+        private void window_loaded(object sender, RoutedEventArgs e)
+        {
+            DoubleAnimation animation = new DoubleAnimation();
+            animation.To = SystemParameters.WorkArea.Height - this.Height;
+            animation.Duration = TimeSpan.FromSeconds(0.5);
+            this.BeginAnimation(Window.TopProperty, animation);
+        }
+
+        public static void ShowMessage(string message, bool isError = false)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (isError)
+                {
+                    if (mMessage == null) mMessage = new NnMessage();
+                    mMessage._showMessage(message, isError);
+                    mMessage.Show();
+                    return;
+                }
+                NnMessage m = new NnMessage();
+                m._showMessage(message, isError);
+                m.Show();
+            });
+        }
+
+        private void Window_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            this.DragMove();
         }
     }
 }
