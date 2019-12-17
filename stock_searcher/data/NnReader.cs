@@ -110,7 +110,7 @@ namespace nnns.data
             {
                 try
                 {
-                    mConnection = new OleDbConnection($"Provider=Microsoft.ACE.OLEDB.{index.ToString()}.0;Data Source={path}");
+                    mConnection = new OleDbConnection($"Provider=Microsoft.ACE.OLEDB.{index.ToString()}.0;Data Source={path};Persist Security Info=False;Jet OLEDB:Database Password={NnConnection.NnDecrypt(key)}");
                     mConnection.Open();
                     IsValid = true;
                     return;
@@ -179,45 +179,20 @@ namespace nnns.data
             {
                 using(OleDbCommand cmd = new OleDbCommand("SELECT * FROM history,stock_new where history.orderId = stock_new.orderId AND history.sequence=@v1", mConnection))
                 {
+                    cmd.Parameters.AddWithValue("v1", p.Sequence);
                     using (OleDbDataReader reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            NnStock stock = _getStockFromDataReader(reader);
+                            NnStock stock = new NnStock();
+                            stock.InitStockByDb(reader);
                             info.Add(stock);// 这里只添加，由stockInfo判断是否有效，决定是否添加（所以这里添加了，不一定会真添加到库存信息中）
                         }
                     }
                 }
             }
-            catch { }
+            catch(Exception e) { Console.WriteLine(e.ToString()); }
             return info;
-        }
-
-        /// <summary>
-        /// 从dataReader对象获取stock数据
-        /// </summary>
-        private NnStock _getStockFromDataReader(OleDbDataReader reader)
-        {
-            string cause = reader["cause"] as string;
-            if (!string.IsNullOrWhiteSpace(cause))
-                return null;
-            string orderId = reader["history.orderId"] as string;
-            string sequence = reader["sequence"] as string;
-            NnStock stock = new NnStock(orderId, sequence);
-            stock.QualitySum = reader["quality"] as string;
-            stock.Mw = (double)reader["mw"];
-            stock.Purity = (double)reader["purity"];
-            stock.Modification = reader["modification"] as string;
-            stock.Comments = reader["comments"] as string;
-
-            object dt = reader["_date"];
-            if (dt.GetType() != typeof(DBNull))
-                stock.Date = (DateTime)dt;
-            object wono = reader["workNo"];
-            if (wono.GetType() != typeof(DBNull))
-                stock.WorkNo = (int)wono;
-
-            return stock;
         }
 
         // --------------工具-----------------
@@ -239,6 +214,54 @@ namespace nnns.data
                 cmd.CommandText = sql;
                 return cmd.ExecuteNonQuery();
             }
+        }
+
+        public static bool GetBoolFromDb(OleDbDataReader reader, string key)
+        {
+            int o = reader.GetOrdinal(key);
+            if (!reader.IsDBNull(o))
+                return reader.GetBoolean(o);
+            return false;
+        }
+
+        public static long GetLongFromDb(OleDbDataReader reader, string key)
+        {
+            int o = reader.GetOrdinal(key);
+            if (!reader.IsDBNull(o))
+                return reader.GetInt64(o);
+            return 0;
+        }
+
+        public static DateTime GetDateTimeFromDb(OleDbDataReader reader, string key)
+        {
+            int o = reader.GetOrdinal(key);
+            if (!reader.IsDBNull(o))
+                return (DateTime)reader[key];
+            return DateTime.MinValue;
+        }
+
+        public static string GetStringFromDb(OleDbDataReader reader, string key)
+        {
+            int o = reader.GetOrdinal(key);
+            if (!reader.IsDBNull(o))
+                return reader.GetString(o);
+            return "";
+        }
+
+        public static int GetIntFromDb(OleDbDataReader reader, string key)
+        {
+            int o = reader.GetOrdinal(key);
+            if (!reader.IsDBNull(o))
+                return reader.GetInt32(o);
+            return 0;
+        }
+
+        public static double GetDoubleFromDb(OleDbDataReader reader, string key)
+        {
+            int o = reader.GetOrdinal(key);
+            if (!reader.IsDBNull(o))
+                return reader.GetDouble(o);
+            return 0;
         }
     }
 }

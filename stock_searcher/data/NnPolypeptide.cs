@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data.OleDb;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -14,12 +15,10 @@ namespace nnns.data
 {
     class NnPolypeptide
     {
-        private readonly string orderId;// orderId
         private long workNo;// worknumber
         private double purity;// 纯度
         private double mw;// 分子量
         private double quality;// 质量（可能是需要的量，也可能时库存量）
-        private readonly string sequence;// 序列
         private string modification;// 修饰
         private string comments;// 备注
         private int tfaflg;// 转盐信息
@@ -29,9 +28,16 @@ namespace nnns.data
             this.orderId = (orderId ?? "").Contains('-') ? orderId : "";
             this.sequence = Regex.Replace(sequence ?? "", @"\s", "").ToUpper();
         }
-
-        public string OrderId { get => orderId; }
-        public string Sequence { get => sequence; }
+        private string orderId;// orderId
+        /// <summary>
+        /// OrderId
+        /// </summary>
+        public string OrderId { get => orderId ?? ""; set => orderId = value; }
+        private string sequence;// 序列
+        /// <summary>
+        /// Sequence
+        /// </summary>
+        public string Sequence { get => sequence ?? ""; set => sequence = value; }
         public long WorkNo { get => workNo; set => workNo = value > 9999 ? value : -1; }
         public object WorkNoObj { set => WorkNo = (long)getNum(value); }// 如果从excel表中读取的值类型不确定的话，建议使用这个属性，避免报错闪退
         public double Mw { get => mw; set => mw = value; }
@@ -77,8 +83,7 @@ namespace nnns.data
                 case "Single":
                     return (double)value;
                 case "String":
-                    double l = 0;
-                    double.TryParse((string)value, out l);
+                    double.TryParse((string)value, out double l);
                     return l;
                 default:return -1;
             }
@@ -87,7 +92,7 @@ namespace nnns.data
         private string intiComments(string value)
         {
             if (string.IsNullOrEmpty(value)) return "";
-            // NnConfig是单例模式
+            // NnConfig
             NnConfig config = NnConfig._nnConfig;
             foreach(NnTfaFlg flg in config.TfaFlgs)
             {
@@ -241,12 +246,16 @@ namespace nnns.data
         public int Flg { get; set; }
 
         public NnStock(string orderId, string sequence) : base(orderId, sequence) { Flg = -1; }
+        public NnStock() : base("", "")
+        {
+            Flg = -1;
+        }
 
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder(OrderId);
             builder.Append(" ").Append(Date.ToShortDateString()).Append(" ").Append(Quality).Append(" ")
-                .Append(PurityString).Append(" ").Append(Coordinate).Append((Flg & 4) == 0 ? "" : "未转盐").Append((Flg & 2) == 0 ? "" : " " + Modification);
+                .Append(PurityString).Append(" ").Append(Coordinate).Append(" ").Append((Flg & 4) == 0 ? "" : "未转盐").Append((Flg & 2) == 0 ? "" : " " + Modification);
             return builder.ToString();
         }
 
@@ -280,6 +289,20 @@ namespace nnns.data
                 else return -1;// 否则就是转盐不合格，直接退出
             Flg = flg;
             return flg;
+        }
+
+        internal void InitStockByDb(OleDbDataReader reader)
+        {
+            OrderId = NnReader.GetStringFromDb(reader, "history.orderId");
+            Sequence = NnReader.GetStringFromDb(reader, "sequence");
+            Quality = NnReader.GetDoubleFromDb(reader, "quality");
+            Mw = NnReader.GetDoubleFromDb(reader, "history.mw");
+            Purity = NnReader.GetDoubleFromDb(reader, "history.purity");
+            Modification = NnReader.GetStringFromDb(reader, "modification");
+            Comments = NnReader.GetStringFromDb(reader, "history.comments");
+            Date = NnReader.GetDateTimeFromDb(reader, "_date");
+            WorkNo = NnReader.GetIntFromDb(reader, "history.workNo");
+            Coordinate = NnReader.GetStringFromDb(reader, "coordinate");
         }
     }
 

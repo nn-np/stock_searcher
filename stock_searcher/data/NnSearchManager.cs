@@ -50,7 +50,7 @@ namespace nnns.data
 
         private void _close()
         {
-            excelReader.Close();
+            excelReader?.Close();
         }
 
         private void _start()
