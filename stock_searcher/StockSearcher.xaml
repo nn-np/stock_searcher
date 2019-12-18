@@ -15,7 +15,7 @@
         </Button>
         <Image Source="res/m_ic.ico" HorizontalAlignment="Left" VerticalAlignment="Top" Width="22" Height="22" Margin="2,2,0,0"/>
         <Button x:Name="bt_choose" Content="选择文件" HorizontalAlignment="Center" VerticalAlignment="Bottom" Click="bt_choose_click" Style="{DynamicResource ButtonStyle}" Margin="0,0,0,12" Background="{x:Null}" BorderBrush="{x:Null}" MinHeight="25" MinWidth="66" Foreground="#FF043648" IsDefault="True"/>
-        <ProgressBar x:Name="progressbar" Margin="37,0,37,47" VerticalAlignment="Bottom" Background="#00E6E6E6" BorderBrush="#00BCBCBC"/>
+        <ProgressBar x:Name="progressbar" Margin="37,0,37,47" VerticalAlignment="Bottom" Background="#00E6E6E6" BorderBrush="#00BCBCBC" Foreground="White"/>
         <TextBlock x:Name="m_tblock" Margin="0,0,0,59" HorizontalAlignment="Center" VerticalAlignment="Bottom" Foreground="#FFE6E6E6" Text="选择或拖动文件至此处" FontSize="14"/>
     </Grid>
 </Window>

@@ -22,7 +22,7 @@ namespace nnns.data
             application.DisplayAlerts = false;
             initReadOnly();
             workbook = url == null ? application.Workbooks.Add(Type.Missing)
-                : application.Workbooks.Open(url, Type.Missing);
+                : application.Workbooks.Add(url);
         }
 
         public bool ToOpen { set => workbook.Application.Visible = value; }
@@ -60,19 +60,23 @@ namespace nnns.data
         static extern int GetWindowThreadProcessId(IntPtr hwnd, out int processid);
         public void Close()
         {
-            if (application == null)
-                return;
-            Console.WriteLine($"释放: {url}");
             try
             {
-                workbook.Close();
-                application.Quit();
+                if (application == null)
+                    return;
+                Console.WriteLine($"释放: {url}");
+                try
+                {
+                    workbook.Close();
+                    application.Quit();
+                }
+                catch { }
+                int pId;
+                GetWindowThreadProcessId(new IntPtr(application.Hwnd), out pId);
+                System.Diagnostics.Process.GetProcessById(pId).Kill();
+                application = null;
             }
             catch { }
-            int pId;
-            GetWindowThreadProcessId(new IntPtr(application.Hwnd), out pId);
-            System.Diagnostics.Process.GetProcessById(pId).Kill();
-            application = null;
         }
 
         ~NnExcelReader() => Close();
@@ -98,7 +102,7 @@ namespace nnns.data
             string key = ConfigurationManager.AppSettings["nnkey"];
 #else
             string path = ConfigurationManager.ConnectionStrings["nnstock"].ConnectionString;// 库存路径
-            string key = NnConnection.NnDecrypt(ConfigurationManager.AppSettings["nnkey"]);
+            string key = ConfigurationManager.AppSettings["nnkey"];
 #endif
             if (path == null || key == null)
             {

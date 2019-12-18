@@ -175,7 +175,7 @@ namespace nnns.data
         {
             get
             {
-                if (!QualityFlg && IsHaveModError) return NnColorFlg.Modification;// 如果质量不够，而且有有可能错误的订单，则返回modification
+                if (IsHaveModError) return NnColorFlg.Modification;// 如果质量不够，而且有有可能错误的订单，则返回modification
                 if (!QualityFlg) return NnColorFlg.Quality;// 如果质量不够，但是没有有可能有错误的订单，就返回质量不足
                 return NnColorFlg.Usual;
             }
